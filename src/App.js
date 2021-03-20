@@ -3,7 +3,8 @@ import keyboardJS from "keyboardjs";
 import moment from "moment";
 import { useState, Fragment, useEffect, useRef } from "react";
 import React from "react";
-// import last from "lodash/last";
+import last from "lodash/last";
+import uniqBy from "lodash/uniqBy";
 
 function useStickyState(defaultValue, key) {
   const [value, setValue] = useState(() => {
@@ -55,7 +56,7 @@ function getDurationMinutes(timeStart, timeEnd) {
     minutesEnd = 24 * 60;
   }
   if (timeStart === "2400") {
-      minutesStart = 24 * 60;
+    minutesStart = 24 * 60;
   }
   return minutesEnd - minutesStart;
 }
@@ -75,6 +76,10 @@ function App() {
 
   const inputTimeRef = useRef(null);
   const inputActivityRef = useRef(null);
+  var lastLoggedTime = beginningTime;
+  if (loggedTimes.length > 0) {
+    lastLoggedTime = last(loggedTimes).time;
+  }
 
   useEffect(() => {
     document.addEventListener("visibilitychange", function () {
@@ -109,58 +114,67 @@ function App() {
 
   let isValidTime = true;
   try {
-      parseTime(time);
+    parseTime(time);
   } catch (e) {
-      isValidTime = false;
+    isValidTime = false;
   }
 
   return (
     <>
-      <div className="App">
+      <div className="activities">
         {loggedTimes.length ? (
-          <table className="activities">
-            <thead>
-              <tr>
-                <td className="header">Von</td>
-                <td className="header">Bis</td>
-                <td className="header">Aktivität</td>
-                <td className="header">Summe</td>
-                <td className="header">Gesammtsumme</td>
-              </tr>
-            </thead>
-            <tbody>
-              {loggedTimes.map(function (loggedTime, i) {
-                const startTime =
-                  i === 0 ? beginningTime : loggedTimes[i - 1].time;
-                const { time, activity } = loggedTime;
-                return (
-                  <tr key={i}>
-                    <td className="activity">{reformatTime(startTime)}</td>
-                    <td className="activity">{reformatTime(time)}</td>
-                    <td className="activity">{activity}</td>
-                    <td className="activity">
-                      {formatDuration(getDurationMinutes(startTime, time))}
-                    </td>
-                    <td className="activity">
-                      {formatDuration(
-                        loggedTimes.reduce(function (sum, entry, j) {
-                          const startTimeX =
-                            j === 0 ? beginningTime : loggedTimes[j - 1].time;
-                          return (
-                            sum +
-                            (entry.activity === activity
-                              ? getDurationMinutes(startTimeX, entry.time)
-                              : 0)
-                          );
-                        }, 0)
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <>
+            <h2>Zeitlog</h2>
+            <table>
+              <thead>
+                <tr>
+                  <td className="header">Von</td>
+                  <td className="header">Bis</td>
+                  <td className="header">Aktivität</td>
+                  <td className="header">Minuten</td>
+                  <td className="header">Summe</td>
+                  <td className="header">Gesammtsumme</td>
+                </tr>
+              </thead>
+              <tbody>
+                {loggedTimes.map(function (loggedTime, i) {
+                  const startTime =
+                    i === 0 ? beginningTime : loggedTimes[i - 1].time;
+                  const { time, activity } = loggedTime;
+                  return (
+                    <tr key={i}>
+                      <td className="activity">{reformatTime(startTime)}</td>
+                      <td className="activity">{reformatTime(time)}</td>
+                      <td className="activity">{activity}</td>
+                      <td className="activity">
+                        {getDurationMinutes(startTime, time)}
+                      </td>
+                      <td className="activity">
+                        {formatDuration(getDurationMinutes(startTime, time))}
+                      </td>
+                      <td className="activity">
+                        {formatDuration(
+                          loggedTimes.reduce(function (sum, entry, j) {
+                            const startTimeX =
+                              j === 0 ? beginningTime : loggedTimes[j - 1].time;
+                            return (
+                              sum +
+                              (entry.activity === activity
+                                ? getDurationMinutes(startTimeX, entry.time)
+                                : 0)
+                            );
+                          }, 0)
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </>
         ) : null}
+      </div>
+      <div className="App">
         <div className="inputs">
           <form
             onSubmit={(e) => {
@@ -197,7 +211,7 @@ function App() {
               type="text"
               id="time"
               autoComplete="off"
-              class={`input-${isValidTime ? 'valid' : 'invalid'}`}
+              className={`input-${isValidTime ? "valid" : "invalid"}`}
               onChange={(e) => {
                 setTime(e.target.value);
                 setLastTimeTouched(+new Date());
@@ -216,23 +230,66 @@ function App() {
             <input type="submit" value="+" />
           </form>
         </div>
-      </div>
-      <div
-        style={{
-          position: "fixed",
-          textAlign: "center",
-          width: "100%",
-          bottom: "15px",
-        }}
-      >
-        <button
-          onClick={() => {
-            setLoggedTimes([]);
+        <div
+          style={{
+            textAlign: "center",
+            width: "100%",
+            bottom: "15px",
           }}
         >
-          Alles löschen
-        </button>
-        <div>Aktuelle Zeit {now}</div>
+          <button
+            onClick={() => {
+              setLoggedTimes([]);
+            }}
+          >
+            Alles löschen
+          </button>
+          <p>
+            Aktuelle Dauer : {getDurationMinutes(lastLoggedTime, now)} Minuten
+          </p>
+        </div>
+      </div>
+      <div className="summary">
+        {loggedTimes.length ? (
+          <>
+            <h2>Überblick</h2>
+            <table>
+              <thead>
+                <tr>
+                  <td className="header">Aktivität</td>
+                  <td className="header">Gesammtsumme</td>
+                </tr>
+              </thead>
+              <tbody>
+                {uniqBy(loggedTimes, (l) => l.activity).map(function (
+                  loggedTime,
+                  i
+                ) {
+                  const { activity } = loggedTime;
+                  return (
+                    <tr key={i}>
+                      <td className="activity">{activity}</td>
+                      <td className="activity">
+                        {formatDuration(
+                          loggedTimes.reduce(function (sum, entry, j) {
+                            const startTimeX =
+                              j === 0 ? beginningTime : loggedTimes[j - 1].time;
+                            return (
+                              sum +
+                              (entry.activity === activity
+                                ? getDurationMinutes(startTimeX, entry.time)
+                                : 0)
+                            );
+                          }, 0)
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </>
+        ) : null}
       </div>
     </>
   );

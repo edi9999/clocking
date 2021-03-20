@@ -1,18 +1,28 @@
+body {
+    padding: 1rem;
+}
 .App {
     display: flex;
     flex-direction: column;
-    height: 100%;
-    justify-content: center;
     text-align: left;
     width: 25rem;
+    margin-top: 2rem;
     min-width: 25rem;
-    margin: auto;
 }
 
 .inputs {
     width: 10rem;
     min-width: 10rem;
-    margin: 0 auto;
+    margin: 0 auto 5rem auto;
+}
+
+table {
+    border-collapse: collapse;
+}
+
+td {
+    padding: 0.5rem;
+    border: 1px solid black;
 }
 
 .inputs form {
@@ -25,8 +35,17 @@
     width: 100%;
 }
 
+#root {
+    display: flex;
+    flex-wrap: wrap;
+}
+
 .activities {
-    margin-bottom: 2rem;
+    display: inline-block;
+    min-width: 33vw
+}
+.summary {
+    min-width: 33vw
 }
 
 .header {
