@@ -2,18 +2,28 @@ body {
     padding: 1rem;
 }
 .App {
+    flex: 1 1 20rem;
     display: flex;
     flex-direction: column;
     text-align: left;
-    width: 25rem;
     margin-top: 2rem;
-    min-width: 25rem;
 }
 
 .inputs {
-    width: 10rem;
-    min-width: 10rem;
+    width: 20rem;
+    min-width: 20rem;
     margin: 0 auto 5rem auto;
+}
+.inputs label {
+    text-align: right;
+    margin-right: .5rem;
+}
+.inputs input {
+    margin-bottom:.5rem;
+}
+.inputs input[type=submit] {
+    max-width: 50%;
+    margin: 1rem auto;
 }
 
 table {
@@ -41,11 +51,11 @@ td {
 }
 
 .activities {
+    flex: 2 0 600px;
     display: inline-block;
-    min-width: 33vw
 }
 .summary {
-    min-width: 33vw
+    flex: 1 1 200px;
 }
 
 .header {
@@ -84,6 +94,10 @@ td {
   to {
     transform: rotate(360deg);
   }
+}
+
+input[type="text"]:focus {
+    background-color: #ff0;
 }
 
 .input-valid, .input-valid:focus {

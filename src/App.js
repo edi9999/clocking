@@ -6,6 +6,13 @@ import React from "react";
 import last from "lodash/last";
 import uniqBy from "lodash/uniqBy";
 
+function mapReverse(array, fn) {
+  return array.reduceRight(function (result, el, i) {
+    result.push(fn(el, i));
+    return result;
+  }, []);
+}
+
 function useStickyState(defaultValue, key) {
   const [value, setValue] = useState(() => {
     const stickyValue = window.localStorage.getItem(key);
@@ -70,6 +77,7 @@ function formatDuration(minutes) {
 function App() {
   const [loggedTimes, setLoggedTimes] = useStickyState([], "loggedTimes");
   const [time, setTime] = useState(formatTime(moment()));
+  const [comment, setComment] = useState("");
   const [lastTimeTouched, setLastTimeTouched] = useState(0);
   const [activity, setActivity] = useState("");
   const [now, setNow] = useState(formatTime(moment()));
@@ -133,14 +141,15 @@ function App() {
                   <td className="header">Aktivität</td>
                   <td className="header">Minuten</td>
                   <td className="header">Summe</td>
-                  <td className="header">Gesammtsumme</td>
+                  <td className="header">Gesammt</td>
+                  <td className="header">Kommentar</td>
                 </tr>
               </thead>
               <tbody>
-                {loggedTimes.map(function (loggedTime, i) {
+                {mapReverse(loggedTimes, function (loggedTime, i) {
                   const startTime =
                     i === 0 ? beginningTime : loggedTimes[i - 1].time;
-                  const { time, activity } = loggedTime;
+                  const { time, activity, comment } = loggedTime;
                   return (
                     <tr key={i}>
                       <td className="activity">{reformatTime(startTime)}</td>
@@ -165,6 +174,9 @@ function App() {
                             );
                           }, 0)
                         )}
+                      </td>
+                      <td className="activity">
+                        {comment}
                       </td>
                     </tr>
                   );
@@ -197,10 +209,11 @@ function App() {
               //     return;
               //   }
               // }
-              setLoggedTimes(loggedTimes.concat({ time, activity }));
+              setLoggedTimes(loggedTimes.concat({ time, activity, comment }));
               setTime(formatTime(moment()));
               setLastTimeTouched(0);
               setActivity("");
+              setComment("");
               // inputTimeRef.current.focus();
               inputActivityRef.current.focus();
             }}
@@ -227,6 +240,15 @@ function App() {
               onChange={(e) => setActivity(e.target.value)}
               value={activity}
             />
+            <label htmlFor="comment">Kommentar</label>
+            <textarea
+              id="comment"
+              name=""
+              cols="20"
+              rows="3"
+              onChange={(e) => setComment(e.target.value)}
+              value={comment}
+            ></textarea>
             <input type="submit" value="+" />
           </form>
         </div>
@@ -261,31 +283,33 @@ function App() {
                 </tr>
               </thead>
               <tbody>
-                {uniqBy(loggedTimes, (l) => l.activity).map(function (
-                  loggedTime,
-                  i
-                ) {
-                  const { activity } = loggedTime;
-                  return (
-                    <tr key={i}>
-                      <td className="activity">{activity}</td>
-                      <td className="activity">
-                        {formatDuration(
-                          loggedTimes.reduce(function (sum, entry, j) {
-                            const startTimeX =
-                              j === 0 ? beginningTime : loggedTimes[j - 1].time;
-                            return (
-                              sum +
-                              (entry.activity === activity
-                                ? getDurationMinutes(startTimeX, entry.time)
-                                : 0)
-                            );
-                          }, 0)
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
+                {mapReverse(
+                  uniqBy(loggedTimes, (l) => l.activity),
+                  function (loggedTime, i) {
+                    const { activity } = loggedTime;
+                    return (
+                      <tr key={i}>
+                        <td className="activity">{activity}</td>
+                        <td className="activity">
+                          {formatDuration(
+                            loggedTimes.reduce(function (sum, entry, j) {
+                              const startTimeX =
+                                j === 0
+                                  ? beginningTime
+                                  : loggedTimes[j - 1].time;
+                              return (
+                                sum +
+                                (entry.activity === activity
+                                  ? getDurationMinutes(startTimeX, entry.time)
+                                  : 0)
+                              );
+                            }, 0)
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  }
+                )}
               </tbody>
             </table>
           </>
