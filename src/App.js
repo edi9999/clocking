@@ -351,7 +351,7 @@ function App() {
               </tr>
             </tbody>
           </table>
-          <input class="btn btn-primary" type="submit" value="+" />
+          <input className="btn btn-primary" type="submit" value="+" />
         </form>
       </div>
       <div className="summary">

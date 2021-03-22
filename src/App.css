@@ -6,7 +6,7 @@ body {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     grid-gap: 20px;
-    grid-template-rows: clamp(200px, 70vh, 650px)  max(300px, 30vh);
+    grid-template-rows: clamp(200px, 70vh, 650px)  clamp(200px, 30vh, 300px);
 }
 .activities {
     grid-column: 1;
@@ -23,7 +23,12 @@ body {
 }
 .summary {
     grid-column: 2 / 3;
-    grid-row: 1 / 2;
+    grid-row: 1 / span 2;
+    text-align: left;
+    display: flex;
+    vertical-align: top;
+    flex-direction: column;
+    height: 100%;
 }
 .App {
     text-align: left;
@@ -89,12 +94,6 @@ td.numeric {
     grid-column: 1 / span 2;
     min-width: 5rem;
     width: 100%;
-}
-
-.summary {
-    text-align: left;
-    display: inline-block;
-    vertical-align: top;
 }
 
 .header {
