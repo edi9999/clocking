@@ -1,6 +1,30 @@
 body {
     padding: 0 1rem;
 }
+#root {
+    height: 100vh;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-gap: 20px;
+    grid-template-rows: clamp(200px, 70vh, 650px)  max(300px, 30vh);
+}
+.activities {
+    grid-column: 1;
+    grid-row: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+}
+.inputs {
+    grid-column: 1;
+    grid-row: 2;
+}
+.summary {
+    grid-column: 2 / 3;
+    grid-row: 1 / 2;
+}
 .App {
     text-align: left;
 }
@@ -10,10 +34,15 @@ body {
 
 .inputs {
     display: inline-block;
-    width: 20rem;
-    min-width: 20rem;
-    margin: 68px auto 5rem auto;
+    min-width: 105px;
+    margin: 0 auto 5rem auto;
 }
+
+.inputs tr td:nth-child(1) {
+    min-width: 105px;
+    background-color: #ccc;
+}
+
 .inputs tr td:nth-child(3),
 .inputs tr td:nth-child(1) {
     text-align: center;
@@ -21,7 +50,7 @@ body {
 .inputs input {
     margin-top:.25rem;
     margin-bottom:.25rem;
-    width: 5rem;
+    width: 4rem;
 }
 
 .inputs input[type=submit] {
@@ -39,6 +68,11 @@ td.comment {
 
 td {
     padding: 1px 5px;
+}
+.activities td, .summary td {
+    border: 1px solid black;
+}
+table {
     border: 1px solid black;
 }
 
@@ -57,10 +91,6 @@ td.numeric {
     width: 100%;
 }
 
-.activities {
-    flex: 2 0 600px;
-    display: inline-block;
-}
 .summary {
     text-align: left;
     display: inline-block;
@@ -75,21 +105,6 @@ td.numeric {
   .App-logo {
     animation: App-logo-spin infinite 20s linear;
   }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
-}
-
-.App-link {
-  color: #61dafb;
 }
 
 @keyframes App-logo-spin {
@@ -120,9 +135,15 @@ input[type="text"]:focus {
 }
 
 .btn {
+    cursor: pointer;
     padding: 5px;
     font-weight: bold;
 }
+
+h3 > .btn {
+    margin-left: 2rem;
+}
+
 .btn-danger {
     border: 2px solid #ee7777;
     background-color: #dd6666;

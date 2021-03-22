@@ -115,10 +115,15 @@ function App() {
   }
 
   const inputTimeRef = useRef(null);
+  const activitiesRef = useRef(null);
   const inputActivityRef = useRef(null);
   if (loggedTimes.length > 0) {
     lastLoggedTime = last(loggedTimes).time;
   }
+
+  useEffect(() => {
+    activitiesRef.current.scroll({ top: 10000000 });
+  });
 
   useInterval(() => {
     setNow(formatTime(moment()));
@@ -167,24 +172,27 @@ function App() {
 
   return (
     <>
-      <div className="activities">
+      <div className="activities" ref={activitiesRef}>
         {loggedTimes.length ? (
           <>
-            <h3>Zeitlog
-            <button
-            className="btn btn-danger pull-right"
-            onClick={() => {
-                // eslint-disable-next-line no-restricted-globals
-                if (confirm("Sind sie sicher, den ganzen Zeitlog löschen ?")) {
+            <h3>
+              Zeitlog
+              <button
+                className="btn btn-danger"
+                onClick={() => {
+                  if (
+                    // eslint-disable-next-line no-restricted-globals
+                    confirm("Sind sie sicher, den ganzen Zeitlog löschen ?")
+                  ) {
                     setLoggedTimes([]);
-                }
-            }}
-            >
-            Alles löschen
-            </button>
+                  }
+                }}
+              >
+                Alles löschen
+              </button>
             </h3>
             <table>
-              <thead>
+              <tbody>
                 <tr>
                   <td className="header">Von</td>
                   <td className="header">Bis</td>
@@ -193,8 +201,6 @@ function App() {
                   <td className="header">Kürzel</td>
                   <td className="header">Zusatz</td>
                 </tr>
-              </thead>
-              <tbody>
                 {map(loggedTimes, function (loggedTime, i) {
                   const startTime =
                     i === 0 ? beginningTime : loggedTimes[i - 1].time;
@@ -214,175 +220,190 @@ function App() {
                     </tr>
                   );
                 })}
+                <tr>
+                  <td className="header">Von</td>
+                  <td className="header">Bis</td>
+                  <td className="header">Dauer (min)</td>
+                  <td className="header">Dauer (std)</td>
+                  <td className="header">Kürzel</td>
+                  <td className="header">Zusatz</td>
+                </tr>
               </tbody>
             </table>
           </>
         ) : null}
       </div>
-      <div className="App">
-        <div className="inputs">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!time || !activity) {
-                return;
-              }
-              try {
-                parseTime(time);
-              } catch (e) {
-                return;
-              }
+      <div className="inputs">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!time || !activity) {
+              return;
+            }
+            try {
+              parseTime(time);
+            } catch (e) {
+              return;
+            }
 
-              setLoggedTimes(loggedTimes.concat({ time, activity, comment }));
-              setTime(now);
-              setPartialDuration(getDurationMinutes(time, now));
-              setLastTimeTouched(0);
-              setActivity("");
-              setComment("");
+            setLoggedTimes(loggedTimes.concat({ time, activity, comment }));
+            setTime(now);
+            setPartialDuration(getDurationMinutes(time, now));
+            setLastTimeTouched(0);
+            setActivity("");
+            setComment("");
 
-              inputActivityRef.current.focus();
-            }}
-          >
-            <table>
-              <tbody>
-                <tr>
-                  <td>
-                    <label htmlFor="time">Uhrzeit</label>
-                  </td>
-                  <td>
-                    <input
-                      tabIndex="1"
-                      ref={inputTimeRef}
-                      type="number"
-                      id="time"
-                      autoComplete="off"
-                      className={`input-${isValidTime ? "valid" : "invalid"}`}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setTime(val);
+            setTimeout(function () {
+              activitiesRef.current.scroll({ top: 10000000 });
+            }, 10);
+            inputActivityRef.current.focus();
+          }}
+        >
+          <table>
+            <tbody>
+              <tr>
+                <td>
+                  <label htmlFor="time">Uhrzeit</label>
+                </td>
+                <td>
+                  <input
+                    tabIndex="1"
+                    ref={inputTimeRef}
+                    type="number"
+                    id="time"
+                    autoComplete="off"
+                    className={`input-${isValidTime ? "valid" : "invalid"}`}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setTime(val);
+                      touchTime();
+                      let isNewTimeValid = true;
+                      try {
+                        parseTime(val);
+                      } catch (e) {
+                        isNewTimeValid = false;
+                      }
+                      if (isNewTimeValid) {
+                        const duration = getDurationMinutes(
+                          lastLoggedTime,
+                          val
+                        );
+                        setPartialDuration(duration);
+                      }
+                    }}
+                    value={time}
+                  />
+                </td>
+                <td>
+                  <label htmlFor="comment">Zusatz</label>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <label htmlFor="activity">Kürzel</label>
+                </td>
+                <td>
+                  <input
+                    ref={inputActivityRef}
+                    tabIndex="2"
+                    autoFocus={true}
+                    type="text"
+                    id="activity"
+                    onChange={(e) => setActivity(e.target.value)}
+                    value={activity}
+                  />
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    id="comment"
+                    name=""
+                    tabIndex="4"
+                    onChange={(e) => setComment(e.target.value)}
+                    value={comment}
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td>Bish. Dauer</td>
+                <td>{getDurationMinutes(lastLoggedTime, now)} min</td>
+                <td></td>
+              </tr>
+              <tr>
+                <td>Dauer (Teil)</td>
+                <td>
+                  <input
+                    type="number"
+                    tabIndex="3"
+                    value={partialDuration}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setPartialDuration(val);
+                      const parsed = parseTime(lastLoggedTime);
+                      if (val > 0) {
+                        setTime(formatTime(parsed.add(val, "minutes")));
                         touchTime();
-                        let isNewTimeValid = true;
-                        try {
-                          parseTime(val);
-                        } catch (e) {
-                          isNewTimeValid = false;
-                        }
-                        if (isNewTimeValid) {
-                          const duration = getDurationMinutes(
-                            lastLoggedTime,
-                            val
-                          );
-                          setPartialDuration(duration);
-                        }
-                      }}
-                      value={time}
-                    />
-                  </td>
-                  <td>
-                    <label htmlFor="comment">Zusatz</label>
-                  </td>
-                </tr>
+                      }
+                    }}
+                  />
+                </td>
+                <td></td>
+              </tr>
+            </tbody>
+          </table>
+          <input class="btn btn-primary" type="submit" value="+" />
+        </form>
+      </div>
+      <div className="summary">
+        {loggedTimes.length ? (
+          <>
+            <h3>Überblick</h3>
+            <table>
+              <thead>
                 <tr>
-                  <td>
-                    <label htmlFor="activity">Kürzel</label>
-                  </td>
-                  <td>
-                    <input
-                      ref={inputActivityRef}
-                      tabIndex="2"
-                      autoFocus={true}
-                      type="text"
-                      id="activity"
-                      onChange={(e) => setActivity(e.target.value)}
-                      value={activity}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="text"
-                      id="comment"
-                      name=""
-                      tabIndex="4"
-                      onChange={(e) => setComment(e.target.value)}
-                      value={comment}
-                    />
-                  </td>
+                  <td className="header">Kürzel</td>
+                  <td className="header">Dauer (min)</td>
+                  <td className="header">Dauer (std)</td>
                 </tr>
-                <tr>
-                  <td>Bish. Dauer</td>
-                  <td>{getDurationMinutes(lastLoggedTime, now)} min</td>
-                </tr>
-                <tr>
-                  <td>Dauer (Teil)</td>
-                  <td>
-                    <input
-                      type="number"
-                      tabIndex="3"
-                      value={partialDuration}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setPartialDuration(val);
-                        const parsed = parseTime(lastLoggedTime);
-                        if (val > 0) {
-                          setTime(formatTime(parsed.add(val, "minutes")));
-                          touchTime();
-                        }
-                      }}
-                    />
-                  </td>
-                </tr>
+              </thead>
+              <tbody>
+                {map(
+                  sortBy(
+                    uniqBy(loggedTimes, (l) => l.activity),
+                    "activity"
+                  ),
+                  function (loggedTime, i) {
+                    const { activity } = loggedTime;
+                    const timeMinutes = loggedTimes.reduce(function (
+                      sum,
+                      entry,
+                      j
+                    ) {
+                      const startTimeX =
+                        j === 0 ? beginningTime : loggedTimes[j - 1].time;
+                      return (
+                        sum +
+                        (entry.activity === activity
+                          ? getDurationMinutes(startTimeX, entry.time)
+                          : 0)
+                      );
+                    },
+                    0);
+                    return (
+                      <tr key={i}>
+                        <td className="activity">{activity}</td>
+                        <td className="activity numeric">{timeMinutes}</td>
+                        <td className="activity numeric">
+                          {formatDuration(timeMinutes)}
+                        </td>
+                      </tr>
+                    );
+                  }
+                )}
               </tbody>
             </table>
-            <input class="btn btn-primary" type="submit" value="+" />
-          </form>
-        </div>
-        <div className="summary">
-          {loggedTimes.length ? (
-            <>
-              <h3>Überblick</h3>
-              <table>
-                <thead>
-                  <tr>
-                    <td className="header">Kürzel</td>
-                    <td className="header">Dauer (std)</td>
-                  </tr>
-                </thead>
-                <tbody>
-                  {map(
-                    sortBy(
-                      uniqBy(loggedTimes, (l) => l.activity),
-                      "activity"
-                    ),
-                    function (loggedTime, i) {
-                      const { activity } = loggedTime;
-                      return (
-                        <tr key={i}>
-                          <td className="activity">{activity}</td>
-                          <td className="activity numeric">
-                            {formatDuration(
-                              loggedTimes.reduce(function (sum, entry, j) {
-                                const startTimeX =
-                                  j === 0
-                                    ? beginningTime
-                                    : loggedTimes[j - 1].time;
-                                return (
-                                  sum +
-                                  (entry.activity === activity
-                                    ? getDurationMinutes(startTimeX, entry.time)
-                                    : 0)
-                                );
-                              }, 0)
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    }
-                  )}
-                </tbody>
-              </table>
-            </>
-          ) : null}
-        </div>
+          </>
+        ) : null}
       </div>
     </>
   );
