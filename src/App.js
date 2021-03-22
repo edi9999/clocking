@@ -4,13 +4,28 @@ import moment from "moment";
 import { useState, Fragment, useEffect, useRef } from "react";
 import React from "react";
 import last from "lodash/last";
+import map from "lodash/map";
 import uniqBy from "lodash/uniqBy";
+import sortBy from "lodash/sortBy";
 
-function mapReverse(array, fn) {
-  return array.reduceRight(function (result, el, i) {
-    result.push(fn(el, i));
-    return result;
-  }, []);
+function useInterval(callback, delay) {
+  const savedCallback = useRef();
+
+  // Remember the latest callback.
+  useEffect(() => {
+    savedCallback.current = callback;
+  }, [callback]);
+
+  // Set up the interval.
+  useEffect(() => {
+    function tick() {
+      savedCallback.current();
+    }
+    if (delay !== null) {
+      let id = setInterval(tick, delay);
+      return () => clearInterval(id);
+    }
+  }, [delay]);
 }
 
 function useStickyState(defaultValue, key) {
@@ -69,9 +84,8 @@ function getDurationMinutes(timeStart, timeEnd) {
 }
 
 function formatDuration(minutes) {
-  return Math.round(minutes / 6)
-    .toFixed(0)
-    .replace(".0", "");
+  return (Math.round(minutes / 6) / 10).toFixed(1).padStart(4, " ");
+  // .replace(".0", "");
 }
 
 function App() {
@@ -81,103 +95,122 @@ function App() {
   const [lastTimeTouched, setLastTimeTouched] = useState(0);
   const [activity, setActivity] = useState("");
   const [now, setNow] = useState(formatTime(moment()));
-
-  const inputTimeRef = useRef(null);
-  const inputActivityRef = useRef(null);
   var lastLoggedTime = beginningTime;
   if (loggedTimes.length > 0) {
     lastLoggedTime = last(loggedTimes).time;
   }
-
-  useEffect(() => {
-    document.addEventListener("visibilitychange", function () {
-      if (!document.hidden) {
-        setTime(formatTime(moment()));
-        inputActivityRef.current.focus();
-      }
-    });
-
-    keyboardJS.bind("/", (e) => {
-      setTime(formatTime(moment()));
-      setLastTimeTouched(0);
-      e.preventDefault();
-    });
-    keyboardJS.bind("enter", (e) => {
-      if (e.target.id === "time") {
-        inputActivityRef.current.focus();
-      }
-    });
-
-    const interval = setInterval(() => {
-      setNow(formatTime(moment()));
-      if (lastTimeTouched < +new Date() - 30000) {
-        setTime(formatTime(moment()));
-      }
-    }, 1000);
-    return () => {
-      clearInterval(interval);
-      keyboardJS.reset();
-    };
-  }, [lastTimeTouched]);
-
   let isValidTime = true;
   try {
     parseTime(time);
   } catch (e) {
     isValidTime = false;
   }
+  let durationDefaultValue = isValidTime
+    ? getDurationMinutes(lastLoggedTime, time)
+    : 0;
+  const [partialDuration, setPartialDuration] = useState(durationDefaultValue);
+
+  function touchTime() {
+    setLastTimeTouched(+new Date());
+  }
+
+  const inputTimeRef = useRef(null);
+  const inputActivityRef = useRef(null);
+  if (loggedTimes.length > 0) {
+    lastLoggedTime = last(loggedTimes).time;
+  }
+
+  useInterval(() => {
+    setNow(formatTime(moment()));
+    if (lastTimeTouched < +new Date() - 30000) {
+      const formattedTime = formatTime(moment());
+      setTime(formattedTime);
+      const duration = getDurationMinutes(lastLoggedTime, formattedTime);
+      setPartialDuration(duration);
+    }
+  }, 1000);
+
+  useEffect(() => {
+    document.addEventListener("visibilitychange", function () {
+      if (!document.hidden) {
+        const formattedTime = formatTime(moment());
+        setTime(formattedTime);
+        const duration = getDurationMinutes(lastLoggedTime, formattedTime);
+        setPartialDuration(duration);
+        inputActivityRef.current.focus();
+      }
+    });
+
+    keyboardJS.bind("/", (e) => {
+      const formattedTime = formatTime(moment());
+      setTime(formattedTime);
+      const duration = getDurationMinutes(lastLoggedTime, formattedTime);
+      setPartialDuration(duration);
+      setLastTimeTouched(0);
+      e.preventDefault();
+    });
+
+    keyboardJS.bind("enter", (e) => {
+      if (e.target.id === "time") {
+        inputActivityRef.current.focus();
+      }
+      if (e.target.id === "activity") {
+        inputActivityRef.current.blur();
+        inputActivityRef.current.focus();
+      }
+    });
+
+    return () => {
+      keyboardJS.reset();
+    };
+  }, [lastTimeTouched, lastLoggedTime]);
 
   return (
     <>
       <div className="activities">
         {loggedTimes.length ? (
           <>
-            <h2>Zeitlog</h2>
+            <h3>Zeitlog
+            <button
+            className="btn btn-danger pull-right"
+            onClick={() => {
+                // eslint-disable-next-line no-restricted-globals
+                if (confirm("Sind sie sicher, den ganzen Zeitlog löschen ?")) {
+                    setLoggedTimes([]);
+                }
+            }}
+            >
+            Alles löschen
+            </button>
+            </h3>
             <table>
               <thead>
                 <tr>
                   <td className="header">Von</td>
                   <td className="header">Bis</td>
-                  <td className="header">Aktivität</td>
-                  <td className="header">Minuten</td>
-                  <td className="header">Summe</td>
-                  <td className="header">Gesammt</td>
-                  <td className="header">Kommentar</td>
+                  <td className="header">Dauer (min)</td>
+                  <td className="header">Dauer (std)</td>
+                  <td className="header">Kürzel</td>
+                  <td className="header">Zusatz</td>
                 </tr>
               </thead>
               <tbody>
-                {mapReverse(loggedTimes, function (loggedTime, i) {
+                {map(loggedTimes, function (loggedTime, i) {
                   const startTime =
                     i === 0 ? beginningTime : loggedTimes[i - 1].time;
-                  const { time, activity, comment } = loggedTime;
+                  const { time: endTime, activity, comment } = loggedTime;
                   return (
                     <tr key={i}>
                       <td className="activity">{reformatTime(startTime)}</td>
-                      <td className="activity">{reformatTime(time)}</td>
+                      <td className="activity">{reformatTime(endTime)}</td>
+                      <td className="activity">
+                        {getDurationMinutes(startTime, endTime)}
+                      </td>
+                      <td className="activity numeric">
+                        {formatDuration(getDurationMinutes(startTime, endTime))}
+                      </td>
                       <td className="activity">{activity}</td>
-                      <td className="activity">
-                        {getDurationMinutes(startTime, time)}
-                      </td>
-                      <td className="activity">
-                        {formatDuration(getDurationMinutes(startTime, time))}
-                      </td>
-                      <td className="activity">
-                        {formatDuration(
-                          loggedTimes.reduce(function (sum, entry, j) {
-                            const startTimeX =
-                              j === 0 ? beginningTime : loggedTimes[j - 1].time;
-                            return (
-                              sum +
-                              (entry.activity === activity
-                                ? getDurationMinutes(startTimeX, entry.time)
-                                : 0)
-                            );
-                          }, 0)
-                        )}
-                      </td>
-                      <td className="activity">
-                        {comment}
-                      </td>
+                      <td className="activity comment">{comment}</td>
                     </tr>
                   );
                 })}
@@ -199,121 +232,157 @@ function App() {
               } catch (e) {
                 return;
               }
-              // if (loggedTimes.length > 0) {
-              //   const lastLoggedTime = parseTime(last(loggedTimes).time);
-              //   if (
-              //     lastLoggedTime.isAfter(parsedTime) ||
-              //     (lastLoggedTime.minutes() === parsedTime.minutes() &&
-              //       lastLoggedTime.hours() === parsedTime.hours())
-              //   ) {
-              //     return;
-              //   }
-              // }
+
               setLoggedTimes(loggedTimes.concat({ time, activity, comment }));
-              setTime(formatTime(moment()));
+              setTime(now);
+              setPartialDuration(getDurationMinutes(time, now));
               setLastTimeTouched(0);
               setActivity("");
               setComment("");
-              // inputTimeRef.current.focus();
+
               inputActivityRef.current.focus();
             }}
           >
-            <label htmlFor="time">Zeit</label>
-            <input
-              ref={inputTimeRef}
-              type="text"
-              id="time"
-              autoComplete="off"
-              className={`input-${isValidTime ? "valid" : "invalid"}`}
-              onChange={(e) => {
-                setTime(e.target.value);
-                setLastTimeTouched(+new Date());
-              }}
-              value={time}
-            />
-            <label htmlFor="activity">Aktivität</label>
-            <input
-              ref={inputActivityRef}
-              autoFocus={true}
-              type="text"
-              id="activity"
-              onChange={(e) => setActivity(e.target.value)}
-              value={activity}
-            />
-            <label htmlFor="comment">Kommentar</label>
-            <textarea
-              id="comment"
-              name=""
-              cols="20"
-              rows="3"
-              onChange={(e) => setComment(e.target.value)}
-              value={comment}
-            ></textarea>
-            <input type="submit" value="+" />
-          </form>
-        </div>
-        <div
-          style={{
-            textAlign: "center",
-            width: "100%",
-            bottom: "15px",
-          }}
-        >
-          <button
-            onClick={() => {
-              setLoggedTimes([]);
-            }}
-          >
-            Alles löschen
-          </button>
-          <p>
-            Aktuelle Dauer : {getDurationMinutes(lastLoggedTime, now)} Minuten
-          </p>
-        </div>
-      </div>
-      <div className="summary">
-        {loggedTimes.length ? (
-          <>
-            <h2>Überblick</h2>
             <table>
-              <thead>
-                <tr>
-                  <td className="header">Aktivität</td>
-                  <td className="header">Gesammtsumme</td>
-                </tr>
-              </thead>
               <tbody>
-                {mapReverse(
-                  uniqBy(loggedTimes, (l) => l.activity),
-                  function (loggedTime, i) {
-                    const { activity } = loggedTime;
-                    return (
-                      <tr key={i}>
-                        <td className="activity">{activity}</td>
-                        <td className="activity">
-                          {formatDuration(
-                            loggedTimes.reduce(function (sum, entry, j) {
-                              const startTimeX =
-                                j === 0
-                                  ? beginningTime
-                                  : loggedTimes[j - 1].time;
-                              return (
-                                sum +
-                                (entry.activity === activity
-                                  ? getDurationMinutes(startTimeX, entry.time)
-                                  : 0)
-                              );
-                            }, 0)
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  }
-                )}
+                <tr>
+                  <td>
+                    <label htmlFor="time">Uhrzeit</label>
+                  </td>
+                  <td>
+                    <input
+                      tabIndex="1"
+                      ref={inputTimeRef}
+                      type="number"
+                      id="time"
+                      autoComplete="off"
+                      className={`input-${isValidTime ? "valid" : "invalid"}`}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setTime(val);
+                        touchTime();
+                        let isNewTimeValid = true;
+                        try {
+                          parseTime(val);
+                        } catch (e) {
+                          isNewTimeValid = false;
+                        }
+                        if (isNewTimeValid) {
+                          const duration = getDurationMinutes(
+                            lastLoggedTime,
+                            val
+                          );
+                          setPartialDuration(duration);
+                        }
+                      }}
+                      value={time}
+                    />
+                  </td>
+                  <td>
+                    <label htmlFor="comment">Zusatz</label>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <label htmlFor="activity">Kürzel</label>
+                  </td>
+                  <td>
+                    <input
+                      ref={inputActivityRef}
+                      tabIndex="2"
+                      autoFocus={true}
+                      type="text"
+                      id="activity"
+                      onChange={(e) => setActivity(e.target.value)}
+                      value={activity}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      id="comment"
+                      name=""
+                      tabIndex="4"
+                      onChange={(e) => setComment(e.target.value)}
+                      value={comment}
+                    />
+                  </td>
+                </tr>
+                <tr>
+                  <td>Bish. Dauer</td>
+                  <td>{getDurationMinutes(lastLoggedTime, now)} min</td>
+                </tr>
+                <tr>
+                  <td>Dauer (Teil)</td>
+                  <td>
+                    <input
+                      type="number"
+                      tabIndex="3"
+                      value={partialDuration}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setPartialDuration(val);
+                        const parsed = parseTime(lastLoggedTime);
+                        if (val > 0) {
+                          setTime(formatTime(parsed.add(val, "minutes")));
+                          touchTime();
+                        }
+                      }}
+                    />
+                  </td>
+                </tr>
               </tbody>
             </table>
-          </>
-        ) : null}
+            <input class="btn btn-primary" type="submit" value="+" />
+          </form>
+        </div>
+        <div className="summary">
+          {loggedTimes.length ? (
+            <>
+              <h3>Überblick</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <td className="header">Kürzel</td>
+                    <td className="header">Dauer (std)</td>
+                  </tr>
+                </thead>
+                <tbody>
+                  {map(
+                    sortBy(
+                      uniqBy(loggedTimes, (l) => l.activity),
+                      "activity"
+                    ),
+                    function (loggedTime, i) {
+                      const { activity } = loggedTime;
+                      return (
+                        <tr key={i}>
+                          <td className="activity">{activity}</td>
+                          <td className="activity numeric">
+                            {formatDuration(
+                              loggedTimes.reduce(function (sum, entry, j) {
+                                const startTimeX =
+                                  j === 0
+                                    ? beginningTime
+                                    : loggedTimes[j - 1].time;
+                                return (
+                                  sum +
+                                  (entry.activity === activity
+                                    ? getDurationMinutes(startTimeX, entry.time)
+                                    : 0)
+                                );
+                              }, 0)
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    }
+                  )}
+                </tbody>
+              </table>
+            </>
+          ) : null}
+        </div>
       </div>
     </>
   );
