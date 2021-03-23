@@ -8,6 +8,12 @@ import map from "lodash/map";
 import uniqBy from "lodash/uniqBy";
 import sortBy from "lodash/sortBy";
 
+function useDocumentTitle(title) {
+  useEffect(() => {
+    window.document.title = title;
+  }, [title]);
+}
+
 function useInterval(callback, delay) {
   const savedCallback = useRef();
 
@@ -124,6 +130,7 @@ function App() {
   useEffect(() => {
     activitiesRef.current.scroll({ top: 10000000 });
   });
+  useDocumentTitle("PClock " + getDurationMinutes(lastLoggedTime, now));
 
   useInterval(() => {
     setNow(formatTime(moment()));
@@ -136,7 +143,7 @@ function App() {
   }, 1000);
 
   useEffect(() => {
-    document.addEventListener("visibilitychange", function () {
+    function visibilityChangeFunction() {
       if (!document.hidden) {
         const formattedTime = formatTime(moment());
         setTime(formattedTime);
@@ -144,7 +151,8 @@ function App() {
         setPartialDuration(duration);
         inputActivityRef.current.focus();
       }
-    });
+    }
+    document.addEventListener("visibilitychange", visibilityChangeFunction);
 
     keyboardJS.bind("/", (e) => {
       const formattedTime = formatTime(moment());
@@ -167,6 +175,10 @@ function App() {
 
     return () => {
       keyboardJS.reset();
+      document.removeEventListener(
+        "visibilitychange",
+        visibilityChangeFunction
+      );
     };
   }, [lastTimeTouched, lastLoggedTime]);
 
