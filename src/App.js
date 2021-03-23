@@ -338,7 +338,7 @@ function App() {
               </tr>
               <tr>
                 <td>Bish. Dauer</td>
-                <td>{getDurationMinutes(lastLoggedTime, now)} min</td>
+                <td><strong>{getDurationMinutes(lastLoggedTime, now)} min</strong></td>
                 <td></td>
               </tr>
               <tr>
