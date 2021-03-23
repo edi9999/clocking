@@ -208,7 +208,6 @@ function App() {
                 <tr>
                   <td className="header">Von</td>
                   <td className="header">Bis</td>
-                  <td className="header">Dauer (min)</td>
                   <td className="header">Dauer (std)</td>
                   <td className="header">Kürzel</td>
                   <td className="header">Zusatz</td>
@@ -221,9 +220,6 @@ function App() {
                     <tr key={i}>
                       <td className="activity">{reformatTime(startTime)}</td>
                       <td className="activity">{reformatTime(endTime)}</td>
-                      <td className="activity">
-                        {getDurationMinutes(startTime, endTime)}
-                      </td>
                       <td className="activity numeric">
                         {formatDuration(getDurationMinutes(startTime, endTime))}
                       </td>
@@ -235,7 +231,6 @@ function App() {
                 <tr>
                   <td className="header">Von</td>
                   <td className="header">Bis</td>
-                  <td className="header">Dauer (min)</td>
                   <td className="header">Dauer (std)</td>
                   <td className="header">Kürzel</td>
                   <td className="header">Zusatz</td>
@@ -374,7 +369,6 @@ function App() {
               <thead>
                 <tr>
                   <td className="header">Kürzel</td>
-                  <td className="header">Dauer (min)</td>
                   <td className="header">Dauer (std)</td>
                 </tr>
               </thead>
@@ -404,7 +398,6 @@ function App() {
                     return (
                       <tr key={i}>
                         <td className="activity">{activity}</td>
-                        <td className="activity numeric">{timeMinutes}</td>
                         <td className="activity numeric">
                           {formatDuration(timeMinutes)}
                         </td>
