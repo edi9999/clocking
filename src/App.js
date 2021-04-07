@@ -355,7 +355,7 @@ function App() {
                   <strong>
                     {durationMinutes > 59
                       ? `${Math.floor(durationMinutes / 60)}:${
-                          durationMinutes % 60
+                          (durationMinutes % 60).toString().padStart(2, '0')
                         }`
                       : `${durationMinutes} min`}
                   </strong>
