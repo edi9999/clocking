@@ -90,8 +90,7 @@ function getDurationMinutes(timeStart, timeEnd) {
 }
 
 function formatDuration(minutes) {
-  return (Math.round(minutes / 6) / 10).toFixed(1).padStart(4, " ");
-  // .replace(".0", "");
+  return (Math.round(minutes / 6)).toFixed(0);
 }
 
 function App() {
@@ -182,6 +181,8 @@ function App() {
     };
   }, [lastTimeTouched, lastLoggedTime]);
 
+  const durationMinutes = getDurationMinutes(lastLoggedTime, now);
+
   return (
     <>
       <div className="activities" ref={activitiesRef}>
@@ -208,7 +209,8 @@ function App() {
                 <tr>
                   <td className="header">Von</td>
                   <td className="header">Bis</td>
-                  <td className="header">Dauer (std)</td>
+                  <td className="header">Dauer (min)</td>
+                  <td className="header">Dauer (1/10 Std)</td>
                   <td className="header">Kürzel</td>
                   <td className="header">Zusatz</td>
                 </tr>
@@ -221,6 +223,9 @@ function App() {
                       <td className="activity">{reformatTime(startTime)}</td>
                       <td className="activity">{reformatTime(endTime)}</td>
                       <td className="activity numeric">
+                        {getDurationMinutes(startTime, endTime)}
+                      </td>
+                      <td className="activity numeric">
                         {formatDuration(getDurationMinutes(startTime, endTime))}
                       </td>
                       <td className="activity">{activity}</td>
@@ -231,7 +236,8 @@ function App() {
                 <tr>
                   <td className="header">Von</td>
                   <td className="header">Bis</td>
-                  <td className="header">Dauer (std)</td>
+                  <td className="header">Dauer (min)</td>
+                  <td className="header">Dauer (1/10 Std)</td>
                   <td className="header">Kürzel</td>
                   <td className="header">Zusatz</td>
                 </tr>
@@ -253,7 +259,14 @@ function App() {
               return;
             }
 
-            setLoggedTimes(loggedTimes.concat({ time, activity, comment }));
+            setLoggedTimes(
+              loggedTimes.concat({
+                time,
+                activity,
+                comment,
+                date: moment().format("YYYYMMDD"),
+              })
+            );
             setTime(now);
             setPartialDuration(getDurationMinutes(time, now));
             setLastTimeTouched(0);
@@ -274,7 +287,13 @@ function App() {
                 </td>
                 <td>
                   <input
-                    tabIndex="1"
+                    tabIndex="3"
+                    onKeyDown={(e) => {
+                        if (e.key === "Tab") {
+                            inputActivityRef.current.focus();
+                            e.preventDefault();
+                        }
+                    }}
                     ref={inputTimeRef}
                     type="number"
                     id="time"
@@ -312,7 +331,7 @@ function App() {
                 <td>
                   <input
                     ref={inputActivityRef}
-                    tabIndex="2"
+                    tabIndex="1"
                     autoFocus={true}
                     type="text"
                     id="activity"
@@ -325,7 +344,6 @@ function App() {
                     type="text"
                     id="comment"
                     name=""
-                    tabIndex="4"
                     onChange={(e) => setComment(e.target.value)}
                     value={comment}
                   />
@@ -333,7 +351,15 @@ function App() {
               </tr>
               <tr>
                 <td>Bish. Dauer</td>
-                <td><strong>{getDurationMinutes(lastLoggedTime, now)} min</strong></td>
+                <td>
+                  <strong>
+                    {durationMinutes > 59
+                      ? `${Math.floor(durationMinutes / 60)}:${
+                          durationMinutes % 60
+                        }`
+                      : `${durationMinutes} min`}
+                  </strong>
+                </td>
                 <td></td>
               </tr>
               <tr>
@@ -341,7 +367,7 @@ function App() {
                 <td>
                   <input
                     type="number"
-                    tabIndex="3"
+                    tabIndex="2"
                     value={partialDuration}
                     onChange={(e) => {
                       const val = e.target.value;
@@ -369,7 +395,8 @@ function App() {
               <thead>
                 <tr>
                   <td className="header">Kürzel</td>
-                  <td className="header">Dauer (std)</td>
+                  <td className="header">Dauer (min)</td>
+                  <td className="header">Dauer (1/10 Std)</td>
                 </tr>
               </thead>
               <tbody>
@@ -398,6 +425,7 @@ function App() {
                     return (
                       <tr key={i}>
                         <td className="activity">{activity}</td>
+                        <td className="activity numeric">{timeMinutes}</td>
                         <td className="activity numeric">
                           {formatDuration(timeMinutes)}
                         </td>

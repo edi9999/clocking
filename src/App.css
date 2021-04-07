@@ -81,10 +81,6 @@ table {
     border: 1px solid black;
 }
 
-td.numeric {
-    white-space: pre-wrap;
-}
-
 .inputs form {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -114,7 +110,7 @@ td.numeric {
   }
 }
 
-input[type="text"]:focus {
+input:focus {
     background-color: #ff0;
 }
 
@@ -146,4 +142,8 @@ h3 > .btn {
     border: 2px solid #ee7777;
     background-color: #dd6666;
     color: white;
+}
+
+#time {
+    font-weight: bold;
 }
