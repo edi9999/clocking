@@ -95,16 +95,27 @@ function formatDuration(minutes) {
 }
 
 function App() {
+  const todaysDate = moment().format("YYYYMMDD");
   const [loggedTimes, setLoggedTimes] = useStickyState([], "loggedTimes");
-  const [time, setTime] = useState(formatTime(moment()));
   const [comment, setComment] = useState("");
   const [lastTimeTouched, setLastTimeTouched] = useState(0);
   const [activity, setActivity] = useState("");
-  const [now, setNow] = useState(formatTime(moment()));
+  const stuckAt24 =
+    loggedTimes.length > 0 && todaysDate !== loggedTimes[0].date;
+  const formatNow = function() {
+      if (stuckAt24) {
+          return "2400";
+      }
+      return formatTime(moment());
+  }
+  const [time, setTime] = useState(formatNow());
+  const [now, setNow] = useState(formatNow());
   var lastLoggedTime = beginningTime;
+
   if (loggedTimes.length > 0) {
     lastLoggedTime = last(loggedTimes).time;
   }
+
   let isValidTime = true;
   try {
     parseTime(time);
@@ -133,9 +144,11 @@ function App() {
   useDocumentTitle("PClock " + getDurationMinutes(lastLoggedTime, now));
 
   useInterval(() => {
-    setNow(formatTime(moment()));
+    if (!stuckAt24) {
+      setNow(formatNow());
+    }
     if (lastTimeTouched < +new Date() - 30000) {
-      const formattedTime = formatTime(moment());
+      const formattedTime = formatNow();
       setTime(formattedTime);
       const duration = getDurationMinutes(lastLoggedTime, formattedTime);
       setPartialDuration(duration);
@@ -145,7 +158,7 @@ function App() {
   useEffect(() => {
     function visibilityChangeFunction() {
       if (!document.hidden) {
-        const formattedTime = formatTime(moment());
+        const formattedTime = formatNow();
         setTime(formattedTime);
         const duration = getDurationMinutes(lastLoggedTime, formattedTime);
         setPartialDuration(duration);
@@ -155,7 +168,7 @@ function App() {
     document.addEventListener("visibilitychange", visibilityChangeFunction);
 
     keyboardJS.bind("/", (e) => {
-      const formattedTime = formatTime(moment());
+      const formattedTime = formatNow();
       setTime(formattedTime);
       const duration = getDurationMinutes(lastLoggedTime, formattedTime);
       setPartialDuration(duration);
@@ -373,7 +386,7 @@ function App() {
                 <td>
                   <input
                     type="text"
-                    tabIndex="2"
+                    tabIndex="3"
                     id="comment"
                     name=""
                     onChange={(e) => setComment(e.target.value)}
@@ -401,7 +414,7 @@ function App() {
                 <td>
                   <input
                     type="number"
-                    tabIndex="3"
+                    tabIndex="2"
                     value={partialDuration}
                     onChange={(e) => {
                       const val = e.target.value;
@@ -446,13 +459,17 @@ function App() {
                   );
                 })}
                 <tr>
-                  <td colspan="3">
+                  <td colSpan="3">
                     <strong>Gesammtsumme</strong>
                   </td>
                 </tr>
                 <tr>
-                  <td>{uberblickSum}</td>
-                  <td>{formatDuration(uberblickSum)}</td>
+                  <td>
+                    <strong>{uberblickSum}</strong>
+                  </td>
+                  <td>
+                    <strong>{formatDuration(uberblickSum)}</strong>
+                  </td>
                   <td>-</td>
                 </tr>
               </tbody>
