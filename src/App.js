@@ -5,6 +5,7 @@ import { useState, Fragment, useEffect, useRef } from "react";
 import React from "react";
 import last from "lodash/last";
 import map from "lodash/map";
+import reduce from "lodash/reduce";
 import uniqBy from "lodash/uniqBy";
 import sortBy from "lodash/sortBy";
 
@@ -90,7 +91,7 @@ function getDurationMinutes(timeStart, timeEnd) {
 }
 
 function formatDuration(minutes) {
-  return (Math.round(minutes / 6)).toFixed(0);
+  return Math.round(minutes / 6).toFixed(0);
 }
 
 function App() {
@@ -182,6 +183,32 @@ function App() {
   }, [lastTimeTouched, lastLoggedTime]);
 
   const durationMinutes = getDurationMinutes(lastLoggedTime, now);
+  const uberblick = map(
+    sortBy(
+      uniqBy(loggedTimes, (l) => l.activity),
+      "activity"
+    ),
+    function (loggedTime, i) {
+      const { activity } = loggedTime;
+      const timeMinutes = loggedTimes.reduce(function (sum, entry, j) {
+        const startTimeX = j === 0 ? beginningTime : loggedTimes[j - 1].time;
+        return (
+          sum +
+          (entry.activity === activity
+            ? getDurationMinutes(startTimeX, entry.time)
+            : 0)
+        );
+      }, 0);
+      return { timeMinutes, activity };
+    }
+  );
+  const uberblickSum = reduce(
+    uberblick,
+    function (sum, part) {
+      return sum + part.timeMinutes;
+    },
+    0
+  );
 
   return (
     <>
@@ -209,10 +236,10 @@ function App() {
                 <tr>
                   <td className="header">Von</td>
                   <td className="header">Bis</td>
-                  <td className="header">Dauer (min)</td>
-                  <td className="header">Dauer (1/10 Std)</td>
-                  <td className="header">Kürzel</td>
-                  <td className="header">Zusatz</td>
+                  <td className="header">Da-m</td>
+                  <td className="header">Da-h</td>
+                  <td className="header">Kü</td>
+                  <td className="header">Zu</td>
                 </tr>
                 {map(loggedTimes, function (loggedTime, i) {
                   const startTime =
@@ -226,7 +253,11 @@ function App() {
                         {getDurationMinutes(startTime, endTime)}
                       </td>
                       <td className="activity numeric">
-                        {formatDuration(getDurationMinutes(startTime, endTime))}
+                        <strong>
+                          {formatDuration(
+                            getDurationMinutes(startTime, endTime)
+                          )}
+                        </strong>
                       </td>
                       <td className="activity">{activity}</td>
                       <td className="activity comment">{comment}</td>
@@ -236,10 +267,10 @@ function App() {
                 <tr>
                   <td className="header">Von</td>
                   <td className="header">Bis</td>
-                  <td className="header">Dauer (min)</td>
-                  <td className="header">Dauer (1/10 Std)</td>
-                  <td className="header">Kürzel</td>
-                  <td className="header">Zusatz</td>
+                  <td className="header">Da-m</td>
+                  <td className="header">Da-h</td>
+                  <td className="header">Kü</td>
+                  <td className="header">Zu</td>
                 </tr>
               </tbody>
             </table>
@@ -287,12 +318,12 @@ function App() {
                 </td>
                 <td>
                   <input
-                    tabIndex="3"
+                    tabIndex="4"
                     onKeyDown={(e) => {
-                        if (e.key === "Tab") {
-                            inputActivityRef.current.focus();
-                            e.preventDefault();
-                        }
+                      if (e.key === "Tab") {
+                        inputActivityRef.current.focus();
+                        e.preventDefault();
+                      }
                     }}
                     ref={inputTimeRef}
                     type="number"
@@ -342,6 +373,7 @@ function App() {
                 <td>
                   <input
                     type="text"
+                    tabIndex="2"
                     id="comment"
                     name=""
                     onChange={(e) => setComment(e.target.value)}
@@ -354,9 +386,11 @@ function App() {
                 <td>
                   <strong>
                     {durationMinutes > 59
-                      ? `${Math.floor(durationMinutes / 60)}:${
-                          (durationMinutes % 60).toString().padStart(2, '0')
-                        }`
+                      ? `${Math.floor(durationMinutes / 60)}:${(
+                          durationMinutes % 60
+                        )
+                          .toString()
+                          .padStart(2, "0")}`
                       : `${durationMinutes} min`}
                   </strong>
                 </td>
@@ -367,7 +401,7 @@ function App() {
                 <td>
                   <input
                     type="number"
-                    tabIndex="2"
+                    tabIndex="3"
                     value={partialDuration}
                     onChange={(e) => {
                       const val = e.target.value;
@@ -394,45 +428,33 @@ function App() {
             <table>
               <thead>
                 <tr>
-                  <td className="header">Kürzel</td>
-                  <td className="header">Dauer (min)</td>
-                  <td className="header">Dauer (1/10 Std)</td>
+                  <td className="header">Da-m</td>
+                  <td className="header">Da-h</td>
+                  <td className="header">Kü</td>
                 </tr>
               </thead>
               <tbody>
-                {map(
-                  sortBy(
-                    uniqBy(loggedTimes, (l) => l.activity),
-                    "activity"
-                  ),
-                  function (loggedTime, i) {
-                    const { activity } = loggedTime;
-                    const timeMinutes = loggedTimes.reduce(function (
-                      sum,
-                      entry,
-                      j
-                    ) {
-                      const startTimeX =
-                        j === 0 ? beginningTime : loggedTimes[j - 1].time;
-                      return (
-                        sum +
-                        (entry.activity === activity
-                          ? getDurationMinutes(startTimeX, entry.time)
-                          : 0)
-                      );
-                    },
-                    0);
-                    return (
-                      <tr key={i}>
-                        <td className="activity">{activity}</td>
-                        <td className="activity numeric">{timeMinutes}</td>
-                        <td className="activity numeric">
-                          {formatDuration(timeMinutes)}
-                        </td>
-                      </tr>
-                    );
-                  }
-                )}
+                {map(uberblick, function ({ timeMinutes, activity }, i) {
+                  return (
+                    <tr key={i}>
+                      <td className="activity numeric">{timeMinutes}</td>
+                      <td className="activity numeric">
+                        <strong>{formatDuration(timeMinutes)}</strong>
+                      </td>
+                      <td className="activity">{activity}</td>
+                    </tr>
+                  );
+                })}
+                <tr>
+                  <td colspan="3">
+                    <strong>Gesammtsumme</strong>
+                  </td>
+                </tr>
+                <tr>
+                  <td>{uberblickSum}</td>
+                  <td>{formatDuration(uberblickSum)}</td>
+                  <td>-</td>
+                </tr>
               </tbody>
             </table>
           </>

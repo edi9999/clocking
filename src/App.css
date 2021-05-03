@@ -1,6 +1,9 @@
 body {
     padding: 0 1rem;
 }
+* {
+    font-size: 17px;
+}
 #root {
     height: 100vh;
     display: grid;
