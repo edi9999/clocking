@@ -198,16 +198,15 @@ function App() {
   const durationMinutes = getDurationMinutes(lastLoggedTime, now);
   const uberblick = map(
     sortBy(
-      uniqBy(loggedTimes, (l) => l.activity),
+      uniqBy(loggedTimes, ({activity}) => activity.trim()),
       "activity"
     ),
     function (loggedTime, i) {
-      const { activity } = loggedTime;
-      const timeMinutes = loggedTimes.reduce(function (sum, entry, j) {
+      const { activity } = loggedTime; const timeMinutes = loggedTimes.reduce(function (sum, entry, j) {
         const startTimeX = j === 0 ? beginningTime : loggedTimes[j - 1].time;
         return (
           sum +
-          (entry.activity === activity
+          (entry.activity.trim() === activity.trim()
             ? getDurationMinutes(startTimeX, entry.time)
             : 0)
         );
@@ -247,12 +246,12 @@ function App() {
             <table>
               <tbody>
                 <tr>
-                  <td className="header">Von</td>
-                  <td className="header">Bis</td>
-                  <td className="header">Da-m</td>
-                  <td className="header">Da-h</td>
-                  <td className="header">Kü</td>
-                  <td className="header">Zu</td>
+                  <td className="header">v</td>
+                  <td className="header">b</td>
+                  <td className="header">M</td>
+                  <td className="header">S</td>
+                  <td className="header">K</td>
+                  <td className="header">Z</td>
                 </tr>
                 {map(loggedTimes, function (loggedTime, i) {
                   const startTime =
@@ -278,12 +277,12 @@ function App() {
                   );
                 })}
                 <tr>
-                  <td className="header">Von</td>
-                  <td className="header">Bis</td>
-                  <td className="header">Da-m</td>
-                  <td className="header">Da-h</td>
-                  <td className="header">Kü</td>
-                  <td className="header">Zu</td>
+                  <td className="header">v</td>
+                  <td className="header">b</td>
+                  <td className="header">M</td>
+                  <td className="header">S</td>
+                  <td className="header">K</td>
+                  <td className="header">Z</td>
                 </tr>
               </tbody>
             </table>
@@ -306,7 +305,7 @@ function App() {
             setLoggedTimes(
               loggedTimes.concat({
                 time,
-                activity,
+                activity: activity.trim(),
                 comment,
                 date: moment().format("YYYYMMDD"),
               })
@@ -386,7 +385,7 @@ function App() {
                 <td>
                   <input
                     type="text"
-                    tabIndex="3"
+                    tabIndex="2"
                     id="comment"
                     name=""
                     onChange={(e) => setComment(e.target.value)}
@@ -414,7 +413,7 @@ function App() {
                 <td>
                   <input
                     type="number"
-                    tabIndex="2"
+                    tabIndex="3"
                     value={partialDuration}
                     onChange={(e) => {
                       const val = e.target.value;
@@ -441,9 +440,9 @@ function App() {
             <table>
               <thead>
                 <tr>
-                  <td className="header">Da-m</td>
-                  <td className="header">Da-h</td>
-                  <td className="header">Kü</td>
+                  <td className="header">M</td>
+                  <td className="header">S</td>
+                  <td className="header">K</td>
                 </tr>
               </thead>
               <tbody>
@@ -460,7 +459,7 @@ function App() {
                 })}
                 <tr>
                   <td colSpan="3">
-                    <strong>Gesammtsumme</strong>
+                    <strong>S</strong>
                   </td>
                 </tr>
                 <tr>

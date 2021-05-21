@@ -96,6 +96,7 @@ table {
 
 .header {
     font-weight: bold;
+    background-color: #ddd;
 }
 
 @media (prefers-reduced-motion: no-preference) {
