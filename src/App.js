@@ -109,6 +109,7 @@ function App() {
 		return formatTime(moment());
 	};
 	const [time, setTime] = useState(formatNow());
+	const [importData, setImportData] = useState("");
 	const [now, setNow] = useState(formatNow());
 	var lastLoggedTime = beginningTime;
 
@@ -243,6 +244,42 @@ function App() {
 							>
 								Alles löschen
 							</button>
+							<textarea
+								value={importData}
+								onChange={(e) => setImportData(e.target.value)}
+								id=""
+								name=""
+								cols="30"
+								rows="10"
+							></textarea>
+							{importData.length > 0 && (
+								<button
+									className="btn btn-danger"
+									onClick={() => {
+										const loggedTimes = [];
+										importData.split("\n").forEach(function (line) {
+											const data = line.split(/[ \t]+/);
+											if (!line.length || !data.length) {
+												return;
+											}
+
+											const newLog = {
+												time: data[0],
+												activity: data[1],
+											};
+
+											if (data[2]) {
+												newLog.comment = data[2];
+											}
+
+											loggedTimes.push(newLog);
+										});
+										setLoggedTimes(loggedTimes);
+									}}
+								>
+									Importieren
+								</button>
+							)}
 						</h3>
 						<table>
 							<tbody>
